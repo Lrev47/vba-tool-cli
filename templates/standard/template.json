@@ -1,0 +1,11 @@
+{
+  "name": "standard",
+  "description": "Standard structure with BaseSheets and WorkbookOperations. Based on UsageFlow pattern.",
+  "folders": [
+    "BaseSheets",
+    "BaseSheets/Builders",
+    "WorkbookOperations",
+    "WorkbookOperations/Directives",
+    "WorkbookOperations/Overview"
+  ]
+}

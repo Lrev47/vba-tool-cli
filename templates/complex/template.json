@@ -1,0 +1,14 @@
+{
+  "name": "complex",
+  "description": "Advanced structure with testing, utilities, and configuration support.",
+  "folders": [
+    "BaseSheets",
+    "BaseSheets/Builders",
+    "WorkbookOperations",
+    "WorkbookOperations/Directives",
+    "WorkbookOperations/Overview",
+    "Utilities",
+    "Tests",
+    "Config"
+  ]
+}

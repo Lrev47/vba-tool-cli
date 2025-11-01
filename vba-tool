@@ -1,0 +1,333 @@
+#!/bin/bash
+
+# VBA Project Scaffolding Tool
+# Automates creation of VBA projects with WSL + Windows Excel integration
+
+set -e
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+LIB_DIR="$SCRIPT_DIR/lib"
+TEMPLATES_DIR="$SCRIPT_DIR/templates"
+CONFIG_FILE="$SCRIPT_DIR/config.json"
+
+# Source helper scripts
+source "$LIB_DIR/config-manager.sh"
+source "$LIB_DIR/template-engine.sh"
+
+# Colors for output
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+BLUE='\033[0;34m'
+NC='\033[0m' # No Color
+
+# Print colored messages
+info() { echo -e "${BLUE}ℹ${NC} $1"; }
+success() { echo -e "${GREEN}✓${NC} $1"; }
+warning() { echo -e "${YELLOW}⚠${NC} $1"; }
+error() { echo -e "${RED}✗${NC} $1"; }
+
+# Show usage
+show_usage() {
+    cat << EOF
+VBA Project Scaffolding Tool
+
+USAGE:
+    vba-tool <command> [options]
+
+COMMANDS:
+    init                        Initialize configuration (first-time setup)
+    new <project> [options]     Create new VBA project
+    add-workbook <project> <workbook>  Add workbook to existing project
+    templates                   List available templates
+    help                        Show this help message
+
+NEW PROJECT OPTIONS:
+    --template <name>           Template to use (simple/standard/complex)
+                                Default: standard
+    --multi                     Create as multi-workbook project
+    --no-git                    Don't initialize git repository
+    --windows-path <path>       Custom Windows path for Excel file
+
+EXAMPLES:
+    vba-tool init
+    vba-tool new BillAndBudget --template simple
+    vba-tool new SalesFlow --template standard --multi
+    vba-tool add-workbook UsageFlow UsageReporting
+    vba-tool templates
+
+EOF
+}
+
+# Initialize configuration
+cmd_init() {
+    info "Initializing VBA Tool configuration..."
+
+    # Check if config already exists
+    if [[ -f "$CONFIG_FILE" ]]; then
+        warning "Configuration already exists at $CONFIG_FILE"
+        read -p "Overwrite? (y/N) " -n 1 -r
+        echo
+        if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+            info "Keeping existing configuration"
+            return 0
+        fi
+    fi
+
+    # Get user input
+    read -p "WSL base path [/home/lrev47/dev/active/vba]: " wsl_base
+    wsl_base=${wsl_base:-/home/lrev47/dev/active/vba}
+
+    read -p "Windows base path [C:\\VBA_Projects]: " win_base
+    win_base=${win_base:-C:\\VBA_Projects}
+
+    # Convert Windows path to WSL format
+    win_base_wsl=$(echo "$win_base" | sed 's|C:\\|/mnt/c/|g; s|\\|/|g')
+
+    read -p "Default template (simple/standard/complex) [standard]: " default_template
+    default_template=${default_template:-standard}
+
+    read -p "Auto-initialize git? (Y/n) " -n 1 -r
+    echo
+    git_auto_init="true"
+    if [[ $REPLY =~ ^[Nn]$ ]]; then
+        git_auto_init="false"
+    fi
+
+    # Create config
+    cat > "$CONFIG_FILE" << EOF
+{
+  "wsl_base_path": "$wsl_base",
+  "windows_base_path": "$win_base",
+  "windows_base_path_wsl": "$win_base_wsl",
+  "default_template": "$default_template",
+  "git_auto_init": $git_auto_init,
+  "default_author": "$(whoami)"
+}
+EOF
+
+    success "Configuration saved to $CONFIG_FILE"
+
+    # Create Windows directory if it doesn't exist
+    if [[ ! -d "$win_base_wsl" ]]; then
+        info "Creating Windows base directory: $win_base"
+        mkdir -p "$win_base_wsl" 2>/dev/null || {
+            warning "Could not create Windows directory. Please create manually: $win_base"
+        }
+    fi
+
+    success "VBA Tool initialized successfully!"
+}
+
+# Create new project
+cmd_new() {
+    local project_name="$1"
+    local template="standard"
+    local multi_workbook=false
+    local init_git=true
+    local custom_windows_path=""
+
+    if [[ -z "$project_name" ]]; then
+        error "Project name is required"
+        echo "Usage: vba-tool new <project-name> [options]"
+        exit 1
+    fi
+
+    # Parse options
+    shift
+    while [[ $# -gt 0 ]]; do
+        case $1 in
+            --template)
+                template="$2"
+                shift 2
+                ;;
+            --multi)
+                multi_workbook=true
+                shift
+                ;;
+            --no-git)
+                init_git=false
+                shift
+                ;;
+            --windows-path)
+                custom_windows_path="$2"
+                shift 2
+                ;;
+            *)
+                error "Unknown option: $1"
+                exit 1
+                ;;
+        esac
+    done
+
+    # Load config
+    load_config
+
+    # Validate template
+    if [[ ! -d "$TEMPLATES_DIR/$template" ]]; then
+        error "Template '$template' not found"
+        info "Available templates: $(ls -1 "$TEMPLATES_DIR" | tr '\n' ' ')"
+        exit 1
+    fi
+
+    # Set paths
+    local wsl_project_path="$WSL_BASE_PATH/$project_name"
+    local win_project_path="${custom_windows_path:-$WINDOWS_BASE_PATH\\$project_name}"
+    local win_project_path_wsl="${custom_windows_path:-$WINDOWS_BASE_PATH_WSL/$project_name}"
+
+    # Check if project already exists
+    if [[ -d "$wsl_project_path" ]]; then
+        error "Project '$project_name' already exists at $wsl_project_path"
+        exit 1
+    fi
+
+    info "Creating new VBA project: $project_name"
+    info "Template: $template"
+    info "WSL path: $wsl_project_path"
+    info "Windows path: $win_project_path"
+
+    # Create WSL directory structure
+    mkdir -p "$wsl_project_path"
+
+    # Create workbook (use project name if not multi-workbook)
+    local workbook_name="$project_name"
+    if $multi_workbook; then
+        read -p "Name of first workbook: " workbook_name
+    fi
+
+    create_workbook_structure "$wsl_project_path" "$workbook_name" "$template"
+
+    # Initialize git if enabled
+    if $init_git && [[ "$GIT_AUTO_INIT" == "true" ]]; then
+        info "Initializing git repository..."
+        git -C "$wsl_project_path" init
+        create_gitignore "$wsl_project_path"
+        success "Git repository initialized"
+    fi
+
+    # Create project metadata
+    create_project_metadata "$wsl_project_path" "$project_name" "$template" "$multi_workbook"
+
+    # Create Windows directory
+    mkdir -p "$win_project_path_wsl" 2>/dev/null || true
+
+    # Create Excel file
+    info "Creating Excel file on Windows..."
+    python3 "$LIB_DIR/create-excel.py" \
+        "$win_project_path\\$workbook_name.xlsm" \
+        "$wsl_project_path/$workbook_name/LocalUtility.bas"
+
+    success "Project created successfully!"
+    echo ""
+    info "Next steps:"
+    echo "  1. Open $win_project_path\\$workbook_name.xlsm in Excel"
+    echo "  2. Enable 'Trust access to the VBA project object model'"
+    echo "     (File > Options > Trust Center > Trust Center Settings > Macro Settings)"
+    echo "  3. Run the ImportAllModules macro to load your VBA code"
+    echo ""
+    info "Start coding in: $wsl_project_path/$workbook_name/"
+}
+
+# Add workbook to existing project
+cmd_add_workbook() {
+    local project_name="$1"
+    local workbook_name="$2"
+
+    if [[ -z "$project_name" ]] || [[ -z "$workbook_name" ]]; then
+        error "Both project and workbook names are required"
+        echo "Usage: vba-tool add-workbook <project-name> <workbook-name>"
+        exit 1
+    fi
+
+    load_config
+
+    local wsl_project_path="$WSL_BASE_PATH/$project_name"
+    local win_project_path="$WINDOWS_BASE_PATH\\$project_name"
+    local win_project_path_wsl="$WINDOWS_BASE_PATH_WSL/$project_name"
+
+    if [[ ! -d "$wsl_project_path" ]]; then
+        error "Project '$project_name' not found at $wsl_project_path"
+        exit 1
+    fi
+
+    if [[ -d "$wsl_project_path/$workbook_name" ]]; then
+        error "Workbook '$workbook_name' already exists in project '$project_name'"
+        exit 1
+    fi
+
+    info "Adding workbook '$workbook_name' to project '$project_name'..."
+
+    # Get template from project metadata or use default
+    local template="$DEFAULT_TEMPLATE"
+    if [[ -f "$wsl_project_path/.vba-project.json" ]]; then
+        template=$(jq -r '.template' "$wsl_project_path/.vba-project.json")
+    fi
+
+    create_workbook_structure "$wsl_project_path" "$workbook_name" "$template"
+
+    # Create Excel file
+    info "Creating Excel file on Windows..."
+    python3 "$LIB_DIR/create-excel.py" \
+        "$win_project_path\\$workbook_name.xlsm" \
+        "$wsl_project_path/$workbook_name/LocalUtility.bas"
+
+    success "Workbook '$workbook_name' added successfully!"
+}
+
+# List templates
+cmd_templates() {
+    info "Available templates:"
+    echo ""
+
+    for template_dir in "$TEMPLATES_DIR"/*; do
+        if [[ -d "$template_dir" ]]; then
+            local template_name=$(basename "$template_dir")
+            local template_json="$template_dir/template.json"
+
+            echo -e "${GREEN}$template_name${NC}"
+
+            if [[ -f "$template_json" ]]; then
+                local description=$(jq -r '.description // "No description"' "$template_json")
+                echo "  $description"
+            fi
+            echo ""
+        fi
+    done
+}
+
+# Main command dispatcher
+main() {
+    if [[ $# -eq 0 ]]; then
+        show_usage
+        exit 0
+    fi
+
+    local command="$1"
+    shift
+
+    case "$command" in
+        init)
+            cmd_init "$@"
+            ;;
+        new)
+            cmd_new "$@"
+            ;;
+        add-workbook)
+            cmd_add_workbook "$@"
+            ;;
+        templates)
+            cmd_templates "$@"
+            ;;
+        help|--help|-h)
+            show_usage
+            ;;
+        *)
+            error "Unknown command: $command"
+            echo ""
+            show_usage
+            exit 1
+            ;;
+    esac
+}
+
+main "$@"
