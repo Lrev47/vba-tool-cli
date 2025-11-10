@@ -55,6 +55,19 @@ create_workbook_structure() {
         warning "  Template does not include LocalUtility.bas"
     fi
 
+    # Create ProjectEntry.bas from template (version-controlled entry point)
+    local template_projectentry="$template_path/ProjectEntry.bas"
+    if [[ -f "$template_projectentry" ]]; then
+        sed -e "s|{{WSL_WORKBOOK_PATH}}|$wsl_workbook_path|g" \
+            -e "s|{{WINDOWS_WORKBOOK_PATH}}|$windows_workbook_path_escaped|g" \
+            -e "s|{{WORKBOOK_NAME}}|$workbook_name|g" \
+            "$template_projectentry" > "$workbook_path/ProjectEntry.bas"
+
+        success "  Created: ProjectEntry.bas"
+    else
+        warning "  Template does not include ProjectEntry.bas"
+    fi
+
     # Create placeholder files in folders if specified
     local placeholder_files=$(jq -r '.placeholder_files[]?' "$template_json")
     if [[ -n "$placeholder_files" ]]; then

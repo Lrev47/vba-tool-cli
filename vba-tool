@@ -215,7 +215,9 @@ cmd_new() {
     info "Creating Excel file on Windows..."
     python3 "$LIB_DIR/create-excel.py" \
         "$win_project_path\\$workbook_name.xlsm" \
-        "$wsl_project_path/$workbook_name/LocalUtility.bas"
+        "$wsl_project_path/$workbook_name/LocalUtility.bas" \
+        "$workbook_name" \
+        "$wsl_project_path/$workbook_name/ProjectEntry.bas"
 
     success "Project created successfully!"
     echo ""
@@ -269,7 +271,9 @@ cmd_add_workbook() {
     info "Creating Excel file on Windows..."
     python3 "$LIB_DIR/create-excel.py" \
         "$win_project_path\\$workbook_name.xlsm" \
-        "$wsl_project_path/$workbook_name/LocalUtility.bas"
+        "$wsl_project_path/$workbook_name/LocalUtility.bas" \
+        "$workbook_name" \
+        "$wsl_project_path/$workbook_name/ProjectEntry.bas"
 
     success "Workbook '$workbook_name' added successfully!"
 }

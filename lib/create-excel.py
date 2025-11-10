@@ -11,8 +11,8 @@ import subprocess
 import json
 from pathlib import Path
 
-def create_powershell_script(excel_path, vba_module_path):
-    """Generate PowerShell script to create Excel file and import VBA"""
+def create_powershell_script(excel_path, vba_module_path, project_name, vba_project_entry_path=""):
+    """Generate PowerShell script to create Excel file, import VBA, and create button"""
 
     # Convert WSL paths to Windows paths for PowerShell
     if vba_module_path.startswith('/mnt/'):
@@ -23,6 +23,16 @@ def create_powershell_script(excel_path, vba_module_path):
         vba_module_path_win = f"\\\\wsl.localhost\\Ubuntu{vba_module_path}"
     else:
         vba_module_path_win = vba_module_path
+
+    # Convert ProjectEntry path if provided
+    vba_project_entry_path_win = ""
+    if vba_project_entry_path:
+        if vba_project_entry_path.startswith('/mnt/'):
+            vba_project_entry_path_win = vba_project_entry_path.replace('/mnt/c/', 'C:\\').replace('/', '\\')
+        elif vba_project_entry_path.startswith('/home/'):
+            vba_project_entry_path_win = f"\\\\wsl.localhost\\Ubuntu{vba_project_entry_path}"
+        else:
+            vba_project_entry_path_win = vba_project_entry_path
 
     ps_script = f"""
 # Excel File Creation Script
@@ -58,6 +68,46 @@ try {{
         Write-Host "WARNING: VBA module not found at: $vbaModulePath"
     }}
 
+    # Import ProjectEntry.bas if it exists
+    $projectEntryPath = "{vba_project_entry_path_win}"
+
+    if ($projectEntryPath -and (Test-Path $projectEntryPath)) {{
+        Write-Host "Importing ProjectEntry module: $projectEntryPath"
+        try {{
+            $workbook.VBProject.VBComponents.Import($projectEntryPath)
+            Write-Host "ProjectEntry module imported successfully"
+        }} catch {{
+            Write-Host "WARNING: Could not import ProjectEntry module"
+            Write-Host "Error: $_"
+        }}
+    }}
+
+    # Create "Run {project_name}" button on Sheet1 (cell C1 pattern from UsageWorkbook)
+    Write-Host "Creating Run button on Sheet1..."
+    try {{
+        $worksheet = $workbook.Worksheets.Item(1)
+
+        # Position button to fill cell C1
+        $cellC1 = $worksheet.Range("C1")
+        $btnLeft = $cellC1.Left
+        $btnTop = $cellC1.Top
+        $btnWidth = $cellC1.Width
+        $btnHeight = $cellC1.Height
+
+        # Create button
+        $button = $worksheet.Buttons().Add($btnLeft, $btnTop, $btnWidth, $btnHeight)
+        $button.Caption = "Run {project_name}"
+        $button.OnAction = "ProjectEntry.RunProject"  # Wired to ProjectEntry module
+
+        Write-Host "Button created successfully"
+        Write-Host "  Caption: Run {project_name}"
+        Write-Host "  Position: Cell C1"
+        Write-Host "  OnAction: ProjectEntry.RunProject"
+    }} catch {{
+        Write-Host "WARNING: Could not create button"
+        Write-Host "Error: $_"
+    }}
+
     # Save as macro-enabled workbook
     $workbook.SaveAs("{excel_path}", 52)  # 52 = xlOpenXMLWorkbookMacroEnabled (.xlsm)
 
@@ -87,13 +137,15 @@ try {{
 
 
 def main():
-    if len(sys.argv) < 3:
-        print("Usage: create-excel.py <excel_path> <vba_module_path>")
-        print("Example: create-excel.py 'C:\\VBA_Projects\\MyProject\\MyWorkbook.xlsm' '/home/user/vba/MyProject/LocalUtility.bas'")
+    if len(sys.argv) < 4:
+        print("Usage: create-excel.py <excel_path> <vba_module_path> <project_name> [vba_project_entry_path]")
+        print("Example: create-excel.py 'C:\\VBA_Projects\\MyProject\\MyWorkbook.xlsm' '/home/user/vba/MyProject/LocalUtility.bas' 'MyProject' '/home/user/vba/MyProject/ProjectEntry.bas'")
         sys.exit(1)
 
     excel_path = sys.argv[1]
     vba_module_path = sys.argv[2]
+    project_name = sys.argv[3]
+    vba_project_entry_path = sys.argv[4] if len(sys.argv) > 4 else ""
 
     # Validate paths
     if not os.path.exists(vba_module_path):
@@ -108,7 +160,7 @@ def main():
         os.makedirs(excel_dir_wsl, exist_ok=True)
 
     # Generate PowerShell script
-    ps_script = create_powershell_script(excel_path, vba_module_path)
+    ps_script = create_powershell_script(excel_path, vba_module_path, project_name, vba_project_entry_path)
 
     # Write PowerShell script to temp file
     temp_ps_file = "/tmp/create-excel.ps1"
