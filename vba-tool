@@ -75,8 +75,8 @@ cmd_init() {
     fi
 
     # Get user input
-    read -p "WSL base path [/home/lrev47/dev/active/vba]: " wsl_base
-    wsl_base=${wsl_base:-/home/lrev47/dev/active/vba}
+    read -p "WSL base path [/home/lrev47/vba]: " wsl_base
+    wsl_base=${wsl_base:-/home/lrev47/vba}
 
     read -p "Windows base path [C:\\VBA_Projects]: " win_base
     win_base=${win_base:-C:\\VBA_Projects}

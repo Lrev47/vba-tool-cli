@@ -1,5 +1,5 @@
 {
-  "wsl_base_path": "/home/lrev47/dev/active/vba",
+  "wsl_base_path": "/home/lrev47/vba",
   "windows_base_path": "C:\\Users\\Luis\\Documents\\VBA_Projects",
   "windows_base_path_wsl": "/mnt/c/Users/Luis/Documents/VBA_Projects",
   "default_template": "standard",

@@ -103,7 +103,7 @@ Configuration is stored in `config.json`:
 
 ```json
 {
-  "wsl_base_path": "/home/lrev47/dev/active/vba",
+  "wsl_base_path": "/home/lrev47/vba",
   "windows_base_path": "C:\\VBA_Projects",
   "windows_base_path_wsl": "/mnt/c/VBA_Projects",
   "default_template": "standard",
@@ -160,7 +160,7 @@ This only needs to be done once per Excel installation.
 ## Directory Structure
 
 ```
-/home/lrev47/dev/active/vba/
+/home/lrev47/vba/
 ├── .vba-tools/              ← The tool itself
 │   ├── vba-tool            ← Main CLI script
 │   ├── config.json          ← Configuration
@@ -187,7 +187,7 @@ This only needs to be done once per Excel installation.
 The alias may not be loaded in your current shell. Either:
 - Restart your terminal, or
 - Run: `source ~/.bashrc`, or
-- Use the full path: `/home/lrev47/dev/active/vba/.vba-tools/vba-tool`
+- Use the full path: `/home/lrev47/vba/.vba-tools/vba-tool`
 
 ### "Could not import VBA module"
 Make sure you've enabled "Trust access to VBA project object model" in Excel (see Excel Setup Requirements above).

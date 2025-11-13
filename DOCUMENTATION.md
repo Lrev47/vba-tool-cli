@@ -87,12 +87,12 @@ sudo apt install jq
 
 **1. The tool is already installed at:**
 ```
-/home/lrev47/dev/active/vba/.vba-tools/
+/home/lrev47/vba/.vba-tools/
 ```
 
 **2. Alias is configured in `~/.zshrc`:**
 ```bash
-alias vba-tool='/home/lrev47/dev/active/vba/.vba-tools/vba-tool'
+alias vba-tool='/home/lrev47/vba/.vba-tools/vba-tool'
 ```
 
 **3. Load the alias (or restart terminal):**
@@ -107,7 +107,7 @@ vba-tool templates
 ```
 
 **5. Configuration is already set up:**
-- WSL code location: `/home/lrev47/dev/active/vba`
+- WSL code location: `/home/lrev47/vba`
 - Windows Excel location: `C:\Users\Luis\Documents\VBA_Projects`
 
 ### Excel Configuration (One-Time)
@@ -160,7 +160,7 @@ vba-tool init
 ```
 
 **Interactive prompts:**
-- WSL base path (default: `/home/lrev47/dev/active/vba`)
+- WSL base path (default: `/home/lrev47/vba`)
 - Windows base path (default: `C:\VBA_Projects`)
 - Default template (simple/standard/complex)
 - Auto-initialize git? (Y/n)
@@ -237,7 +237,7 @@ vba-tool new SpecialProject --windows-path "D:\Projects\VBA"
 
 1. Creates WSL directory structure:
    ```
-   /home/lrev47/dev/active/vba/MyProject/
+   /home/lrev47/vba/MyProject/
    └── MyProject/
        ├── LocalUtility.bas (auto-configured)
        ├── BaseSheets/
@@ -285,7 +285,7 @@ vba-tool add-workbook SalesSystem Dashboard
 
 **Result:**
 ```
-/home/lrev47/dev/active/vba/SalesSystem/
+/home/lrev47/vba/SalesSystem/
 ├── Invoices/
 │   └── LocalUtility.bas
 ├── Reports/
@@ -616,7 +616,7 @@ Failed: 1
 
 **1. Create project:**
 ```bash
-cd /home/lrev47/dev/active/vba
+cd /home/lrev47/vba
 vba-tool new BillAndBudget --template standard
 ```
 
@@ -713,14 +713,14 @@ This cycle can be as fast as **30 seconds** per iteration!
 ### Configuration File Location
 
 ```
-/home/lrev47/dev/active/vba/.vba-tools/config.json
+/home/lrev47/vba/.vba-tools/config.json
 ```
 
 ### Current Configuration
 
 ```json
 {
-  "wsl_base_path": "/home/lrev47/dev/active/vba",
+  "wsl_base_path": "/home/lrev47/vba",
   "windows_base_path": "C:\\Users\\Luis\\Documents\\VBA_Projects",
   "windows_base_path_wsl": "/mnt/c/Users/Luis/Documents/VBA_Projects",
   "default_template": "standard",
@@ -733,7 +733,7 @@ This cycle can be as fast as **30 seconds** per iteration!
 
 | Option | Description | Default |
 |--------|-------------|---------|
-| `wsl_base_path` | Where VBA code is stored (WSL) | `/home/lrev47/dev/active/vba` |
+| `wsl_base_path` | Where VBA code is stored (WSL) | `/home/lrev47/vba` |
 | `windows_base_path` | Where Excel files are created (Windows) | `C:\Users\Luis\Documents\VBA_Projects` |
 | `windows_base_path_wsl` | WSL mount point for Windows path | `/mnt/c/Users/Luis/Documents/VBA_Projects` |
 | `default_template` | Template used if not specified | `standard` |
@@ -750,7 +750,7 @@ vba-tool init
 
 **Method 2: Manual edit**
 ```bash
-code /home/lrev47/dev/active/vba/.vba-tools/config.json
+code /home/lrev47/vba/.vba-tools/config.json
 # Edit values directly
 ```
 
@@ -777,13 +777,13 @@ exit
 
 **Option 3: Use full path**
 ```bash
-/home/lrev47/dev/active/vba/.vba-tools/vba-tool help
+/home/lrev47/vba/.vba-tools/vba-tool help
 ```
 
 **Verify alias:**
 ```bash
 alias | grep vba-tool
-# Should show: vba-tool=/home/lrev47/dev/active/vba/.vba-tools/vba-tool
+# Should show: vba-tool=/home/lrev47/vba/.vba-tools/vba-tool
 ```
 
 ---
@@ -839,7 +839,7 @@ Const BASE_PATH As String = "\\wsl.localhost\Ubuntu\home\lrev47\dev\active\vba\P
 
 **Solution 2: Create missing folders**
 ```bash
-cd /home/lrev47/dev/active/vba/ProjectName/WorkbookName
+cd /home/lrev47/vba/ProjectName/WorkbookName
 mkdir -p BaseSheets/Builders
 mkdir -p WorkbookOperations/Directives
 mkdir -p WorkbookOperations/Overview
@@ -870,7 +870,7 @@ ReloadAllModules
 
 **Initialize git manually:**
 ```bash
-cd /home/lrev47/dev/active/vba/ProjectName
+cd /home/lrev47/vba/ProjectName
 git init
 ```
 
@@ -892,7 +892,7 @@ git remote add origin https://github.com/username/repo.git
 
 **1. Create template directory:**
 ```bash
-mkdir -p /home/lrev47/dev/active/vba/.vba-tools/templates/mytemplate
+mkdir -p /home/lrev47/vba/.vba-tools/templates/mytemplate
 ```
 
 **2. Create template.json:**
@@ -1226,10 +1226,10 @@ RunAllTests
 ### File Locations
 
 ```
-WSL Code:     /home/lrev47/dev/active/vba/ProjectName/
+WSL Code:     /home/lrev47/vba/ProjectName/
 Windows Excel: C:\Users\Luis\Documents\VBA_Projects\ProjectName\
-Tool:         /home/lrev47/dev/active/vba/.vba-tools/
-Config:       /home/lrev47/dev/active/vba/.vba-tools/config.json
+Tool:         /home/lrev47/vba/.vba-tools/
+Config:       /home/lrev47/vba/.vba-tools/config.json
 ```
 
 ---
@@ -1238,17 +1238,17 @@ Config:       /home/lrev47/dev/active/vba/.vba-tools/config.json
 
 **View this documentation:**
 ```bash
-code /home/lrev47/dev/active/vba/.vba-tools/DOCUMENTATION.md
+code /home/lrev47/vba/.vba-tools/DOCUMENTATION.md
 ```
 
 **View README:**
 ```bash
-code /home/lrev47/dev/active/vba/.vba-tools/README.md
+code /home/lrev47/vba/.vba-tools/README.md
 ```
 
 **View configuration:**
 ```bash
-cat /home/lrev47/dev/active/vba/.vba-tools/config.json
+cat /home/lrev47/vba/.vba-tools/config.json
 ```
 
 **Check tool version:**
